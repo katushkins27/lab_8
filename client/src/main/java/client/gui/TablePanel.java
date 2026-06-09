@@ -11,7 +11,7 @@ public class TablePanel extends JPanel{
     private final LocaleManager lm = LocaleManager.getInstance();
     private final TicketTableModel model;
     private final JTable table;
-    private final TableRowSorter<TicketTableModel> rowSorter;
+    //private final TableRowSorter<TicketTableModel> rowSorter;
 
     private JComboBox<String> filterColumnCombo;
     private JTextField filterValueField;
@@ -24,8 +24,6 @@ public class TablePanel extends JPanel{
     public TablePanel(TicketTableModel model){
         this.model = model;
         this.table = new JTable(model);
-        this.rowSorter = new TableRowSorter<>(model);
-        table.setRowSorter(rowSorter);
 
         setLayout(new BorderLayout(6,6));
         setOpaque(false);
@@ -33,17 +31,18 @@ public class TablePanel extends JPanel{
         add(buildTable(), BorderLayout.CENTER);
 
         lm.addChangeListener(() -> {
-            model.refreshColumnNames();
+            model.refreshColumnNames(table);
             rebuildFilterCombo();
             updateTexts();
         });
 
         table.getTableHeader().addMouseListener(new MouseAdapter() {
+            boolean asc = true;
+            int lastCol = -1;
             @Override public void mouseClicked(MouseEvent e) {
                 int col = table.columnAtPoint(e.getPoint());
                 if (col >= 0) {
-                    boolean asc = rowSorter.getSortKeys().isEmpty() ||
-                            rowSorter.getSortKeys().get(0).getSortOrder() == SortOrder.DESCENDING;
+                    if (col == lastCol) { asc = !asc; } else { asc = true; lastCol = col; }
                     model.setSort(col, asc);
                 }
             }

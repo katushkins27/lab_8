@@ -1,5 +1,7 @@
 package client.gui;
 import common.data.*;
+
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -85,12 +87,12 @@ public class TicketTableModel extends AbstractTableModel {
         if (va == null && vb == null) return 0;
         if (va == null) return -1;
         if (vb == null) return 1;
-        if (col == COL_ID)     return Integer.compare(a.getId(), b.getId());
+        if (col == COL_ID)     return Long.compare(a.getId(), b.getId());
         if (col == COL_COORD_X) return Integer.compare(a.getCoordinates().getX(), b.getCoordinates().getX());
         if (col == COL_COORD_Y) return Long.compare(a.getCoordinates().getY(), b.getCoordinates().getY());
         if (col == COL_PRICE && a.getPrice() != null && b.getPrice() != null)
             return Long.compare(a.getPrice(), b.getPrice());
-        if (col == COL_VENUE_CAP) return Integer.compare(a.getVenue().getCapacity(), b.getVenue().getCapacity());
+        if (col == COL_VENUE_CAP) return Long.compare(a.getVenue().getCapacity(), b.getVenue().getCapacity());
         if (va instanceof Comparable && vb instanceof Comparable) {
             return ((Comparable) va).compareTo(vb);
         }
@@ -142,7 +144,10 @@ public class TicketTableModel extends AbstractTableModel {
     public Class<?> getColumnClass(int col) {
         return String.class;
     }
-    public void refreshColumnNames(){
-        fireTableStructureChanged();
+    public void refreshColumnNames(JTable table) {
+        for (int i=0; i<getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setHeaderValue(getColumnName(i));
+        }
+        table.getTableHeader().repaint();
     }
 }

@@ -65,6 +65,8 @@ public class TicketDialog extends JDialog{
 
         if (isEdit) {
             idField = new JTextField(8);
+            idField.setEditable(false);
+            idField.setBackground(new Color(198, 198, 198));
             addRow(basicGrid, gbc, 0, lm.get("ticket.id"), idField);
         }
         nameField = new JTextField(20);
@@ -90,17 +92,24 @@ public class TicketDialog extends JDialog{
         venueGrid.setOpaque(false);
         GridBagConstraints gbc2 = createGbc();
 
-        venueIdField = new JTextField(10);
+        //venueIdField = new JTextField(10);
         venueNameField = new JTextField(20);
         venueCapacityField = new JTextField(10);
         venueStreetField = new JTextField(20);
         venueZipField = new JTextField(10);
 
-        addRow(venueGrid, gbc2, 0, lm.get("ticket.venue_id"), venueIdField);
-        addRow(venueGrid, gbc2, 1, lm.get("ticket.venue_name"), venueNameField);
-        addRow(venueGrid, gbc2, 2, lm.get("ticket.venue_capacity"), venueCapacityField);
-        addRow(venueGrid, gbc2, 3, lm.get("ticket.venue_street"), venueStreetField);
-        addRow(venueGrid, gbc2, 4, lm.get("ticket.venue_zipcode"), venueZipField);
+        int vRow = 0;
+        if (isEdit) {
+            venueIdField = new JTextField(10);
+            venueIdField.setEditable(false);
+            venueIdField.setBackground(new Color(198, 198, 198));
+            addRow(venueGrid, gbc2, vRow++, lm.get("ticket.venue_id"), venueIdField);
+        }
+
+        addRow(venueGrid, gbc2, vRow++, lm.get("ticket.venue_name"), venueNameField);
+        addRow(venueGrid, gbc2, vRow++, lm.get("ticket.venue_capacity"), venueCapacityField);
+        addRow(venueGrid, gbc2, vRow++, lm.get("ticket.venue_street"), venueStreetField);
+        addRow(venueGrid, gbc2, vRow, lm.get("ticket.venue_zipcode"), venueZipField);
 
         venueSection.add(venueGrid);
         panel.add(venueSection);
@@ -210,10 +219,13 @@ public class TicketDialog extends JDialog{
         priceField.setText(t.getPrice() != null ? String.valueOf(t.getPrice()) : "");
         if (t.getType() != null) typeCombo.setSelectedItem(t.getType());
         if (t.getVenue() != null) {
+            if (isEdit && venueIdField != null) {
+                venueIdField.setText(String.valueOf(t.getVenue().getID()));
+            }
             Venue v = t.getVenue();
-            venueIdField.setText(String.valueOf(v.getID()));
             venueNameField.setText(v.getName() != null ? v.getName() : "");
             venueCapacityField.setText(String.valueOf(v.getCapacity()));
+
             if (v.getAddress() != null) {
                 venueStreetField.setText(v.getAddress().getStreet() != null ? v.getAddress().getStreet() : "");
                 venueZipField.setText(v.getAddress().getZipCode() != null ? v.getAddress().getZipCode() : "");
@@ -238,39 +250,84 @@ public class TicketDialog extends JDialog{
         t.setName(nameField.getText().trim());
         if (t.getName().isEmpty()) throw new IllegalArgumentException("Название не может быть пустым");
 
-        int cx = Integer.parseInt(coordXField.getText().trim());
-        long cy = Long.parseLong(coordYField.getText().trim());
-        t.setCoordinates(new Coordinates(cx, cy));
+        try {
+            String cxStr = coordXField.getText().trim();
+            if (cxStr.isEmpty()) throw new IllegalArgumentException("Координата X билета не может быть пустой");
+            String cyStr = coordYField.getText().trim();
+            if (cyStr.isEmpty()) throw new IllegalArgumentException("Координата Y билета не может быть пустой");
+
+            int cx = Integer.parseInt(cxStr);
+            Long cy = Long.parseLong(cyStr);
+            t.setCoordinates(new Coordinates(cx, cy));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Координаты введены некорректно: X (целое), Y (целое)");
+        }
 
         String priceStr = priceField.getText().trim();
         if (!priceStr.isEmpty()) {
             long price = Long.parseLong(priceStr);
+            if (price <= 0) throw new IllegalArgumentException("Цена билета должна быть больше 0");
             t.setPrice(price);
         }
         t.setType((TicketType) typeCombo.getSelectedItem());
         t.setCreationDate(java.time.LocalDateTime.now());
 
-        long venueId = Long.parseLong(venueIdField.getText().trim());
+        //long venueId = Long.parseLong(venueIdField.getText().trim());
         String venueName = venueNameField.getText().trim();
-        if (venueName.isEmpty()) throw new IllegalArgumentException("Название площадки не может быть пустым");
-        int venueCap = Integer.parseInt(venueCapacityField.getText().trim());
-        if (venueCap <= 0) throw new IllegalArgumentException("Вместимость должна быть > 0");
+        if (!venueName.isEmpty()) {
+            long venueId = 0L;
+            if (isEdit && venueIdField != null && !venueIdField.getText().isBlank()) {
+                try {
+                    venueId = Long.parseLong(venueIdField.getText().trim());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Некорректный ID площадки");
+                }
+            }
 
-        String street = venueStreetField.getText().trim();
-        if (street.isEmpty()) throw new IllegalArgumentException("Улица не может быть пустой");
-        String zip = venueZipField.getText().trim();
+            int venueCap;
+            try {
+                venueCap = Integer.parseInt(venueCapacityField.getText().trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Вместимость площадки должна быть целым числом");
+            }
+            if (venueCap <= 0) throw new IllegalArgumentException("Вместимость площадки должна быть больше 0");
 
-        double lx = Double.parseDouble(locXField.getText().trim());
-        long ly = Long.parseLong(locYField.getText().trim());
-        float lz = Float.parseFloat(locZField.getText().trim());
-        String lname = locNameField.getText().trim();
-        if (lname.isEmpty()) lname = null;
+            String street = venueStreetField.getText().trim();
+            if (street.isEmpty()) throw new IllegalArgumentException("Улица не может быть пустой");
+            if (street.length() > 61) throw new IllegalArgumentException("Длина улицы не может превышать 61 символ");
 
-        Location location = new Location(lname, lx, ly, lz);
-        Address address = new Address(street, zip.isEmpty() ? null : zip, location);
-        Venue venue = new Venue(venueId, venueName, venueCap, address);
-        t.setVenue(venue);
+            String zip = venueZipField.getText().trim();
+            if (zip.isEmpty()) zip = null;
+            String lxStr = locXField.getText().trim();
+            String lyStr = locYField.getText().trim();
+            String lzStr = locZField.getText().trim();
+            String lname = locNameField.getText().trim();
 
+            Location location = null;
+
+            if (!lxStr.isEmpty() || !lyStr.isEmpty() || !lzStr.isEmpty() || !lname.isEmpty()) {
+                if (lxStr.isEmpty()) throw new IllegalArgumentException("Для локации координата X не может быть пустой");
+                if (lyStr.isEmpty()) throw new IllegalArgumentException("Для локации координата Y не может быть пустой");
+                if (lzStr.isEmpty()) throw new IllegalArgumentException("Для локации координата Z не может быть пустой");
+                try {
+                    double lx = lxStr.isEmpty() ? 0.0 : Double.parseDouble(lxStr);
+                    Long ly = Long.parseLong(lyStr);
+                    Float lz = Float.parseFloat(lzStr);
+
+                    if (lname.length() > 777) throw new IllegalArgumentException("Название локации слишком длинное (<= 777)");
+                    String finalLocName = lname.isEmpty() ? null : lname;
+                    location = new Location(finalLocName, lx, ly, lz);
+
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Координаты локации неверны: X (с точкой), Y (целое), Z (с точкой)");
+                }
+            }
+            Address address = new Address(street, zip, location);
+            Venue venue = new Venue(venueId, venueName, venueCap, address);
+            t.setVenue(venue);
+        } else {
+            t.setVenue(null);
+        }
         return t;
     }
 

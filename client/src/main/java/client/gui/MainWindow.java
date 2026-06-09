@@ -468,6 +468,6 @@ public class MainWindow extends JFrame {
         btnScript.setText(lm.get("cmd.execute_script"));
         btnLogout.setText(lm.get("cmd.logout"));
 
-        tableModel.refreshColumnNames();
+        tableModel.refreshColumnNames(tablePanel.getTable());
     }
 }

@@ -63,16 +63,20 @@ public class GuiScriptExecutor {
     private Request buildRequest(String command, String arg, Queue<String> lines){
         switch (command){
             case "add": {
-                Ticket t = readTicketFromQueue(lines);
+                Ticket t = readTicketFromQueue(lines, false);
                 return t != null ? new Request("add", t, credentials) : null;
             }
             case "update": {
                 if (arg.isEmpty()) return null;
-                Ticket t = readTicketFromQueue(lines);
-                return t != null ? new Request("update", arg, t, credentials) : null;
+                Ticket t = readTicketFromQueue(lines, true);
+                if (t != null) {
+                    t.setID(Integer.parseInt(arg));
+                    return new Request("update", t, credentials);
+                }
+                return null;
             }
             case "remove_greater": {
-                Ticket t = readTicketFromQueue(lines);
+                Ticket t = readTicketFromQueue(lines, false);
                 return t != null ? new Request("remove_greater", t, credentials) : null;
             }
             case "remove_any_by_type": {
@@ -102,35 +106,61 @@ public class GuiScriptExecutor {
         }
     }
 
-    private Ticket readTicketFromQueue(Queue<String> lines){
-        try{
+    private Ticket readTicketFromQueue(Queue<String> lines, boolean isUpdate) {
+        try {
+            Ticket t = new Ticket();
+
             String name = nextLine(lines);
+            if (name.isEmpty()) throw new IllegalArgumentException("Имя пустое");
+            t.setName(name);
+
             int coordX = Integer.parseInt(nextLine(lines));
             long coordY = Long.parseLong(nextLine(lines));
-            String priceStr = nextLine(lines);
-            Long price = priceStr.isEmpty() ? null : Long.parseLong(priceStr);
-            TicketType type = TicketType.valueOf(nextLine(lines).toUpperCase());
-            long venueId = Long.parseLong(nextLine(lines));
-            String venueName = nextLine(lines);
-            int venueCap = Integer.parseInt(nextLine(lines));
-            String street = nextLine(lines);
-            String zip = nextLine(lines);
-            double locX = Double.parseDouble(nextLine(lines));
-            long locY = Long.parseLong(nextLine(lines));
-            float locZ = Float.parseFloat(nextLine(lines));
-            String locName = nextLine(lines);
-            Location loc = new Location(locName.isEmpty() ? null : locName, locX, locY, locZ);
-            Address addr = new Address(street, zip.isEmpty() ? null : zip, loc);
-            Venue venue = new Venue(venueId, venueName, venueCap, addr);
-            Ticket t = new Ticket();
-            t.setName(name);
             t.setCoordinates(new Coordinates(coordX, coordY));
-            t.setPrice(price);
-            t.setType(type);
+
+            String priceStr = nextLine(lines);
+            if (!priceStr.isEmpty()) t.setPrice(Long.parseLong(priceStr));
+
+            t.setType(TicketType.valueOf(nextLine(lines).toUpperCase()));
             t.setCreationDate(java.time.LocalDateTime.now());
-            t.setVenue(venue);
+
+            String venueName = nextLine(lines);
+
+            if (!venueName.isEmpty()) {
+                int venueCap = Integer.parseInt(nextLine(lines));
+                String street = nextLine(lines);
+                String zip = nextLine(lines);
+
+                String lxStr = nextLine(lines);
+                String lyStr = nextLine(lines);
+                String lzStr = nextLine(lines);
+                String locName = nextLine(lines);
+
+                Location loc = null;
+                if (!lxStr.isEmpty() || !lyStr.isEmpty() || !lzStr.isEmpty() || !locName.isEmpty()) {
+                    double lx = lxStr.isEmpty() ? 0.0 : Double.parseDouble(lxStr);
+                    Long ly = Long.parseLong(lyStr);
+                    Float lz = Float.parseFloat(lzStr);
+
+                    loc = new Location(locName.isEmpty() ? null : locName, lx, ly, lz);
+                }
+
+                Address addr = new Address(street, zip.isEmpty() ? null : zip, loc);
+
+                int venueId;
+                if (isUpdate) {
+                    String venueIdStr = nextLine(lines);
+                    venueId = venueIdStr.isEmpty() ? 0 : Integer.parseInt(venueIdStr);
+                } else {
+                    venueId = 0;
+                }
+                Venue venue = new Venue(venueId, venueName, venueCap, addr);
+                t.setVenue(venue);
+            }
             return t;
-        } catch (Exception e){
+
+        } catch (Exception e) {
+            System.err.println("Ошибка валидации билета в скрипте: " + e.getMessage());
             return null;
         }
     }

@@ -4,15 +4,10 @@ import java.io.Serializable;
 
 public class Venue implements Comparable<Venue>, Serializable{
     private static final long serialVersionUID = 1L;
-
     private long id;
-
     private String name;
-
     private int capacity;
-
     private Address address;
-
 
     public Venue(long id, String name, int capacity, Address address){
         setID(id);
@@ -22,30 +17,23 @@ public class Venue implements Comparable<Venue>, Serializable{
     }
 
     public Venue(){
-
     }
-
 
     public long getID() {
         return id;
     }
-
     public String getName() {
         return name;
     }
-
     public int getCapacity() {
         return capacity;
     }
-
     public Address getAddress() {
         return address;
     }
-
     public void setID(long id){
         this.id = id;
     }
-
     public void setIdWithValid(long id) {
         if (id <= 0) {
             throw new IllegalArgumentException("ID должен быть строго больше 0");

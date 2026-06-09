@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 
 public class CollectionManager {
-    private static final Logger logger = Logger.getLogger(CollectionManager.class.getName());
+    //private static final Logger logger = Logger.getLogger(CollectionManager.class.getName());
     private final LocalDateTime date = LocalDateTime.now();
     private final DatabaseManager dbManager;
     private Collection<Ticket> collection = Collections.synchronizedCollection(new ArrayDeque<>());

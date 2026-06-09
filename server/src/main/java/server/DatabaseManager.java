@@ -192,6 +192,7 @@ public class DatabaseManager {
             Long venueId = null;
             if (ticket.getVenue()!=null){
                 venueId = saveVenue (connect, ticket.getVenue());
+                ticket.getVenue().setID(venueId);
             }
             stmt.setObject(7,venueId);
             stmt.setInt(8,userId);
@@ -252,6 +253,38 @@ public class DatabaseManager {
     }
 
     private Long saveVenue(Connection connect, Venue venue) throws SQLException{
+        if (venue.getID() > 0) {
+            String sql = """
+            UPDATE venues 
+            SET name = ?, capacity = ?, street = ?, zip_code = ?,
+                location_x = ?, location_y = ?, location_z = ?, location_name = ?
+            WHERE id = ?
+            """;
+            try (PreparedStatement stmt = connect.prepareStatement(sql)) {
+                stmt.setString(1, venue.getName());
+                stmt.setInt(2, venue.getCapacity());
+                stmt.setString(3, venue.getAddress().getStreet());
+                stmt.setString(4, venue.getAddress().getZipCode());
+
+                Location loc = venue.getAddress().getTown();
+                if (loc != null) {
+                    stmt.setDouble(5, loc.getX());
+                    stmt.setLong(6, loc.getY());
+                    stmt.setFloat(7, loc.getZ());
+                    stmt.setString(8, loc.getName());
+                } else {
+                    stmt.setNull(5, Types.DOUBLE);
+                    stmt.setNull(6, Types.BIGINT);
+                    stmt.setNull(7, Types.REAL);
+                    stmt.setNull(8, Types.VARCHAR);
+                }
+
+                stmt.setLong(9, venue.getID());
+                stmt.executeUpdate();
+                return venue.getID();
+            }
+        }
+
         String sql = """
             INSERT INTO venues (name, capacity, street, zip_code,
                                 location_x, location_y, location_z, location_name)
