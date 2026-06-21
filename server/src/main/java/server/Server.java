@@ -106,10 +106,8 @@ public class Server {
 
     public static void main(String[] args){
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
-        //String dbUser = System.getenv().getOrDefault("DB_USER", "studs");
-        //String dbPassword = System.getenv().getOrDefault("DB_PASSWORD", "studs");
         String dbUser = System.getenv().getOrDefault("DB_USER", "postgres");
-        String dbPassword = System.getenv().getOrDefault("DB_PASSWORD", "Cthu2705");
+        String dbPassword = System.getenv().getOrDefault("DB_PASSWORD", "");
         try {
             Server server = new Server(port, dbUser, dbPassword);
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
